@@ -422,7 +422,14 @@ export default function VendorsPage() {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               {vendor.profileImage ? (
-                                <Image src={vendor.profileImage} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                                <Image 
+                                  src={vendor.profileImage} 
+                                  alt="Profile" 
+                                  className="h-10 w-10 rounded-full object-cover" 
+                                  width={40}
+                                  height={40}
+                                  unoptimized={vendor.profileImage.startsWith('http')}
+                                />
                               ) : (
                                 <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                                   <span className="text-sm font-medium text-gray-700">
@@ -512,7 +519,14 @@ export default function VendorsPage() {
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
                 {selectedVendor.profileImage ? (
-                  <Image src={selectedVendor.profileImage} alt="Profile" className="h-16 w-16 rounded-full object-cover" />
+                  <Image 
+                    src={selectedVendor.profileImage} 
+                    alt="Profile" 
+                    className="h-16 w-16 rounded-full object-cover" 
+                    width={64}
+                    height={64}
+                    unoptimized={selectedVendor.profileImage.startsWith('http')}
+                  />
                 ) : (
                   <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
                     <span className="text-lg font-medium text-gray-700">

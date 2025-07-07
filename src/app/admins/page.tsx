@@ -335,7 +335,15 @@ export default function AdminsPage() {
                           <div className="flex items-center">
                             <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
                               {adminItem.profileImage ? (
-                                <Image src={adminItem.profileImage} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                                <Image 
+                                  src={adminItem.profileImage} 
+                                  alt="Profile" 
+                                  className="h-10 w-10 rounded-full object-cover" 
+                                  width={40}
+                                  height={40}
+                                  priority
+                                  unoptimized={adminItem.profileImage.startsWith('http')}
+                                />
                               ) : (
                                 <span className="text-sm font-bold text-red-600">
                                   {adminItem.admin_name.split(' ').map(n => n[0]).join('').toUpperCase()}

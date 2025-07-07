@@ -267,7 +267,15 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-6 mb-6">
               <div className="h-24 w-24 bg-red-100 rounded-full flex items-center justify-center">
                 {admin.profileImage ? (
-                  <Image src={admin.profileImage} alt="Profile" className="h-24 w-24 rounded-full object-cover" />
+                  <Image 
+                    src={admin.profileImage} 
+                    alt="Profile" 
+                    className="h-24 w-24 rounded-full object-cover" 
+                    width={96}
+                    height={96}
+                    priority
+                    unoptimized={admin.profileImage.startsWith('http')}
+                  />
                 ) : (
                   <span className="text-3xl font-bold text-red-600">
                     {admin.admin_name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -508,9 +516,23 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-4">
                   <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
                     {imagePreview ? (
-                      <Image src={imagePreview} alt="Preview" className="h-16 w-16 object-cover" />
+                      <Image 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="h-16 w-16 object-cover" 
+                        width={64}
+                        height={64}
+                        unoptimized={imagePreview.startsWith('http')}
+                      />
                     ) : admin?.profileImage ? (
-                      <Image src={admin.profileImage} alt="Current" className="h-16 w-16 object-cover" />
+                      <Image 
+                        src={admin.profileImage} 
+                        alt="Current" 
+                        className="h-16 w-16 object-cover" 
+                        width={64}
+                        height={64}
+                        unoptimized={admin.profileImage.startsWith('http')}
+                      />
                     ) : (
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

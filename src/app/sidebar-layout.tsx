@@ -214,7 +214,15 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
                 >
                   <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
                     {admin.profileImage ? (
-                      <Image src={admin.profileImage} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                      <Image 
+                        src={admin.profileImage} 
+                        alt="Profile" 
+                        className="h-8 w-8 rounded-full object-cover" 
+                        width={32}
+                        height={32}
+                        priority
+                        unoptimized={admin.profileImage.startsWith('http')}
+                      />
                     ) : (
                       <span className="text-sm font-bold text-red-600">
                         {admin.admin_name.split(' ').map(n => n[0]).join('').toUpperCase()}

@@ -111,7 +111,8 @@ function ForgotPasswordContent() {
                 <Image
                     src="https://images.unsplash.com/photo-1551434678-e076c223a692"
                     alt="Authentication background"
-                    fill
+                    width={1200}
+                    height={800}
                     className="object-cover"
                     priority
                 />
