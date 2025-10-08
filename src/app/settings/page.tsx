@@ -1,217 +1,116 @@
-'use client';
-
+'use client'
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import SidebarLayout from '../sidebar-layout';
-
-interface Admin {
-  id: string;
-  email: string;
-  admin_name: string;
-  role: string;
-  permissions: string[];
-  isActive: boolean;
-}
 
 export default function SettingsPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const [admin, setAdmin] = useState<Admin | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Razorpay configuration removed - using environment variables
+  
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
+  // Redirect if not authenticated or not admin
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
+    if (status === 'unauthenticated') {
       router.push('/auth/signin');
-      return;
+    } else if (session && session.user.role !== 'admin') {
+      router.push('/');
     }
+  }, [status, session, router]);
 
+  // Load existing configurations
+  useEffect(() => {
+    if (session?.user?.id && session.user.role === 'admin') {
+      loadConfigurations();
+    }
+  }, [session]);
+
+  const loadConfigurations = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/session`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAdmin(data.data.admin);
-      } else {
-        localStorage.removeItem('adminToken');
-        router.push('/auth/signin');
-      }
+      // Razorpay configuration is now handled via environment variables
+      console.log('Razorpay configuration is managed via environment variables');
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('adminToken');
-      router.push('/auth/signin');
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to load configurations:', error);
     }
   };
 
-  if (isLoading) {
+  // Razorpay configuration removed - using environment variables
+
+
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      <div className="p-8">
+        <div className="text-gray-500">Loading...</div>
       </div>
     );
   }
 
-  if (!admin) {
+  if (!session || session.user.role !== 'admin') {
     return null;
   }
 
   return (
-    <SidebarLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors duration-200">
-            Save Changes
-          </button>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">System Settings</h1>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+          {success}
+        </div>
+      )}
+
+      <div className="max-w-2xl">
+        {/* Razorpay Configuration */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold mb-4">Razorpay Configuration</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 text-sm">
+              <strong>Note:</strong> Razorpay is configured using environment variables. 
+              Please set the following environment variables in your deployment:
+            </p>
+            <ul className="mt-2 text-blue-700 text-sm list-disc list-inside space-y-1">
+              <li><code>RAZORPAY_KEY_ID</code> - Your Razorpay Key ID (starts with rzp_test_ or rzp_live_)</li>
+              <li><code>RAZORPAY_KEY_SECRET</code> - Your Razorpay Key Secret</li>
+            </ul>
+            <p className="mt-3 text-blue-800 text-sm">
+              <strong>All payments will be processed through your single Razorpay account and credited directly to your account.</strong>
+            </p>
+          </div>
         </div>
 
-        {/* Settings Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* General Settings */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
-                  <input
-                    type="text"
-                    defaultValue="BitnBolt Admin Panel"
-                    className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
-                  <select className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
-                    <option>Indian Rupee (₹)</option>
-                    <option>US Dollar ($)</option>
-                    <option>Euro (€)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
-                  <select className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
-                    <option>Asia/Kolkata (IST)</option>
-                    <option>UTC</option>
-                    <option>America/New_York</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Security Settings */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Security Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Two-Factor Authentication</h4>
-                    <p className="text-xs text-gray-500">Enable 2FA for additional security</p>
-                  </div>
-                  <button className="bg-gray-200 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <span className="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Session Timeout</h4>
-                    <p className="text-xs text-gray-500">Auto-logout after inactivity</p>
-                  </div>
-                  <select className="rounded-lg border border-gray-200 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
-                    <option>30 minutes</option>
-                    <option>1 hour</option>
-                    <option>2 hours</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Login Attempts</h4>
-                    <p className="text-xs text-gray-500">Max failed login attempts</p>
-                  </div>
-                  <input
-                    type="number"
-                    defaultValue="5"
-                    className="w-20 rounded-lg border border-gray-200 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Notification Settings */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">New User Registration</h4>
-                    <p className="text-xs text-gray-500">Get notified when new users register</p>
-                  </div>
-                  <button className="bg-red-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">New Vendor Registration</h4>
-                    <p className="text-xs text-gray-500">Get notified when new vendors register</p>
-                  </div>
-                  <button className="bg-red-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Order Notifications</h4>
-                    <p className="text-xs text-gray-500">Get notified about new orders</p>
-                  </div>
-                  <button className="bg-red-600 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* System Information */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Platform Version</h4>
-                  <p className="mt-1 text-sm text-gray-900">v1.0.0</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Database</h4>
-                  <p className="mt-1 text-sm text-gray-900">MongoDB v6.0</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Last Backup</h4>
-                  <p className="mt-1 text-sm text-gray-900">Dec 16, 2024 10:30 AM</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Server Status</h4>
-                  <p className="mt-1 text-sm text-green-600">✓ Online</p>
-                </div>
-              </div>
-            </div>
+        {/* Shiprocket Information */}
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mt-6">
+          <h2 className="text-lg font-semibold mb-4">Shiprocket Configuration</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 text-sm">
+              <strong>Note:</strong> Shiprocket is configured using environment variables. 
+              Please set the following environment variables in your deployment:
+            </p>
+            <ul className="mt-2 text-blue-700 text-sm list-disc list-inside space-y-1">
+              <li><code>SHIPROCKET_EMAIL</code> - Your Shiprocket account email</li>
+              <li><code>SHIPROCKET_PASSWORD</code> - Your Shiprocket account password</li>
+              <li><code>SHIPROCKET_PICKUP_NAME</code> - Pickup location name</li>
+              <li><code>SHIPROCKET_PICKUP_PHONE</code> - Pickup location phone</li>
+              <li><code>SHIPROCKET_PICKUP_ADDRESS</code> - Pickup location address</li>
+              <li><code>SHIPROCKET_PICKUP_CITY</code> - Pickup location city</li>
+              <li><code>SHIPROCKET_PICKUP_STATE</code> - Pickup location state</li>
+              <li><code>SHIPROCKET_PICKUP_PINCODE</code> - Pickup location pincode</li>
+              <li><code>SHIPROCKET_PICKUP_COUNTRY</code> - Pickup location country (default: India)</li>
+            </ul>
           </div>
         </div>
       </div>
-    </SidebarLayout>
+      </div>
   );
 } 
