@@ -1,61 +1,157 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import SidebarLayout from '../sidebar-layout';
 
-interface Admin {
+type AdminSession = {
   id: string;
   email: string;
   admin_name: string;
-  role: string;
-  permissions: string[];
-  isActive: boolean;
-}
+};
+
+type Summary = {
+  totalOrders: number;
+  totalRevenue: number;
+  totalVendors: number;
+  totalProducts: number;
+  totalUsers: number;
+};
+
+type StatusBreakdown = Record<string, { orders: number; revenue: number }>;
+
+type TrendPoint = {
+  date: string;
+  revenue: number;
+  orders: number;
+};
+
+type TopVendor = {
+  vendorId: string;
+  shopName?: string;
+  email?: string;
+  revenue: number;
+  orders: number;
+};
+
+type TopProduct = {
+  productId: string;
+  name?: string;
+  revenue: number;
+  unitsSold: number;
+};
+
+const RANGE_OPTIONS = [
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+  { value: '1y', label: 'Last 12 months' },
+];
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const [admin, setAdmin] = useState<Admin | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [admin, setAdmin] = useState<AdminSession | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [range, setRange] = useState('30d');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [summary, setSummary] = useState<Summary>({
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalVendors: 0,
+    totalProducts: 0,
+    totalUsers: 0,
+  });
+  const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdown>({});
+  const [revenueTrend, setRevenueTrend] = useState<TrendPoint[]>([]);
+  const [topVendors, setTopVendors] = useState<TopVendor[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }),
+    []
+  );
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    const checkSession = async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        router.push('/auth/signin');
+        return;
+      }
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/session`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      router.push('/auth/signin');
-      return;
-    }
+        if (!response.ok) {
+          localStorage.removeItem('adminToken');
+          router.push('/auth/signin');
+          return;
+        }
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/session`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
         const data = await response.json();
         setAdmin(data.data.admin);
-      } else {
+      } catch (err) {
+        console.error('Admin session check failed', err);
         localStorage.removeItem('adminToken');
         router.push('/auth/signin');
+      } finally {
+        setAuthLoading(false);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('adminToken');
-      router.push('/auth/signin');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  if (isLoading) {
+    checkSession();
+  }, [router]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!admin) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/analytics/summary?range=${range}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics');
+        }
+
+        const data = await response.json();
+        setSummary(data.summary);
+        setStatusBreakdown(data.statusBreakdown || {});
+        setRevenueTrend(data.revenueTrend || []);
+        setTopVendors(data.topVendors || []);
+        setTopProducts(data.topProducts || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [admin, range]);
+
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600" />
       </div>
     );
   }
@@ -67,15 +163,22 @@ export default function AnalyticsPage() {
   return (
     <SidebarLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <div className="flex space-x-2">
-            <select className="rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-              <option>Last 3 Months</option>
-              <option>Last Year</option>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+            <p className="text-gray-500 text-sm">Live KPIs across orders, vendors, and revenue</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              className="rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
+            >
+              {RANGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             <button className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors duration-200">
               Export Report
@@ -83,136 +186,155 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">Total Revenue</h3>
-            <p className="text-3xl font-bold text-green-600">₹1,23,45,678</p>
-            <p className="text-sm text-green-600 mt-2">+12.5% from last month</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">Total Orders</h3>
-            <p className="text-3xl font-bold text-blue-600">8,901</p>
-            <p className="text-sm text-blue-600 mt-2">+8.3% from last month</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">Active Users</h3>
-            <p className="text-3xl font-bold text-purple-600">1,156</p>
-            <p className="text-sm text-purple-600 mt-2">+15.2% from last month</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900">Conversion Rate</h3>
-            <p className="text-3xl font-bold text-orange-600">3.2%</p>
-            <p className="text-sm text-orange-600 mt-2">+0.5% from last month</p>
-          </div>
-        </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+        )}
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Revenue Chart */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
-            <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Revenue Chart Placeholder</p>
+        {loading ? (
+          <div className="bg-white rounded-lg shadow p-10 text-center text-gray-500">Loading analytics...</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <SummaryCard title="Total Revenue" value={currencyFormatter.format(summary.totalRevenue)} tone="text-green-600" />
+              <SummaryCard title="Orders" value={summary.totalOrders.toLocaleString()} tone="text-blue-600" />
+              <SummaryCard title="Vendors" value={summary.totalVendors.toLocaleString()} tone="text-indigo-600" />
+              <SummaryCard title="Products" value={summary.totalProducts.toLocaleString()} tone="text-purple-600" />
+              <SummaryCard title="Users" value={summary.totalUsers.toLocaleString()} tone="text-amber-600" />
             </div>
-          </div>
 
-          {/* Orders Chart */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Orders Trend</h3>
-            <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Orders Chart Placeholder</p>
-            </div>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white shadow rounded-lg p-6 lg:col-span-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
+                <TrendChart data={revenueTrend} currencyFormatter={currencyFormatter} />
+              </div>
 
-        {/* Top Performers */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Vendors */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Vendors</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-green-300 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-medium text-green-700">TS</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">TechStore</span>
+              <div className="bg-white shadow rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Breakdown</h3>
+                <div className="space-y-4">
+                  {Object.keys(statusBreakdown).length === 0 && (
+                    <p className="text-sm text-gray-500">No orders for selected range.</p>
+                  )}
+                  {Object.entries(statusBreakdown).map(([statusKey, stats]) => (
+                    <div key={statusKey}>
+                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                        <span className="capitalize">{statusKey}</span>
+                        <span>{stats.orders} orders</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full"
+                          style={{
+                            width: `${
+                              summary.totalOrders === 0 ? 0 : Math.min((stats.orders / summary.totalOrders) * 100, 100)
+                            }%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {currencyFormatter.format(stats.revenue)} collected
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-sm text-gray-500">₹2,34,567</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-medium text-blue-700">FS</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">FashionStore</span>
-                </div>
-                <span className="text-sm text-gray-500">₹1,89,234</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-purple-300 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-sm font-medium text-purple-700">HS</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">HomeStore</span>
-                </div>
-                <span className="text-sm text-gray-500">₹1,56,789</span>
               </div>
             </div>
-          </div>
 
-          {/* Top Products */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Selling Products</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">iPhone 15 Pro</span>
-                <span className="text-sm text-gray-500">234 units</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Top Vendors</h3>
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">
+                    {topVendors.length} vendors
+                  </span>
+                </div>
+                {topVendors.length === 0 ? (
+                  <p className="text-sm text-gray-500">No vendor activity in this range.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {topVendors.map((vendor) => (
+                      <div key={vendor.vendorId} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-gray-900">{vendor.shopName || 'Vendor'}</p>
+                          <p className="text-xs text-gray-400">{vendor.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-red-600">
+                            {currencyFormatter.format(vendor.revenue)}
+                          </p>
+                          <p className="text-xs text-gray-400">{vendor.orders} orders</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">Samsung Galaxy S24</span>
-                <span className="text-sm text-gray-500">189 units</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">MacBook Air M2</span>
-                <span className="text-sm text-gray-500">156 units</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">Nike Air Max</span>
-                <span className="text-sm text-gray-500">123 units</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">New vendor TechStore registered</span>
-              <span className="text-xs text-gray-400">2 hours ago</span>
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
+                  <span className="text-xs text-gray-400 uppercase tracking-wide">{topProducts.length} items</span>
+                </div>
+                {topProducts.length === 0 ? (
+                  <p className="text-sm text-gray-500">No product sales recorded for this range.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {topProducts.map((product) => (
+                      <div key={product.productId} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-gray-900">{product.name || 'Product'}</p>
+                          <p className="text-xs text-gray-400">{product.unitsSold} units sold</p>
+                        </div>
+                        <p className="text-sm font-semibold text-blue-600">
+                          {currencyFormatter.format(product.revenue)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Order #12345 completed</span>
-              <span className="text-xs text-gray-400">4 hours ago</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">New user registration: john@example.com</span>
-              <span className="text-xs text-gray-400">6 hours ago</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Payment received: ₹5,000</span>
-              <span className="text-xs text-gray-400">8 hours ago</span>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </SidebarLayout>
   );
-} 
+}
+
+function SummaryCard({ title, value, tone }: { title: string; value: string; tone: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <p className="text-xs uppercase text-gray-400 tracking-wide">{title}</p>
+      <p className={`text-2xl font-bold ${tone}`}>{value}</p>
+    </div>
+  );
+}
+
+function TrendChart({ data, currencyFormatter }: { data: TrendPoint[]; currencyFormatter: Intl.NumberFormat }) {
+  if (data.length === 0) {
+    return <p className="text-sm text-gray-500">No data available.</p>;
+  }
+
+  const maxRevenue = Math.max(...data.map((point) => point.revenue));
+
+  return (
+    <div className="space-y-3">
+      {data.map((point) => (
+        <div key={point.date} className="flex items-center gap-3">
+          <span className="w-20 text-xs font-medium text-gray-500">{point.date}</span>
+          <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
+              style={{
+                width: `${maxRevenue === 0 ? 0 : Math.max((point.revenue / maxRevenue) * 100, 6)}%`,
+              }}
+            />
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold text-gray-900">{currencyFormatter.format(point.revenue)}</p>
+            <p className="text-xs text-gray-400">{point.orders} orders</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

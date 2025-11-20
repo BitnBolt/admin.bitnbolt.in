@@ -32,10 +32,6 @@ export default function AddAdminPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   const checkAuth = async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -69,6 +65,10 @@ export default function AddAdminPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

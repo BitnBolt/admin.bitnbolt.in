@@ -53,9 +53,7 @@ export default function AdminsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  
 
   useEffect(() => {
     if (admin) {
@@ -92,6 +90,10 @@ export default function AdminsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const fetchAdmins = async () => {
     try {

@@ -37,9 +37,6 @@ export default function ProfilePage() {
   const [profileSuccess, setProfileSuccess] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
 
   const checkAuth = async () => {
     const token = localStorage.getItem('adminToken');
@@ -70,6 +67,10 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();

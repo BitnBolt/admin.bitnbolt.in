@@ -41,16 +41,6 @@ export default function AdminDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (admin) {
-      fetchDashboardStats();
-    }
-  }, [admin]);
-
   const checkAuth = async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) {
@@ -80,6 +70,16 @@ export default function AdminDashboard() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (admin) {
+      fetchDashboardStats();
+    }
+  }, [admin]);
 
   const fetchDashboardStats = async () => {
     try {
