@@ -395,7 +395,12 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">{vendorLabel(p.vendorId)}</td>
                       <td className="px-4 py-3 text-sm font-medium">₹{p.basePrice.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-sm">{p.profitMargin}%</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span>{p.profitMargin}%</span>
+                        <span className="block text-[10px] leading-tight text-gray-400">
+                          ₹{calcMargined(p.basePrice, p.profitMargin).toFixed(2)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-sm">{p.discount}%</td>
                       <td className="px-4 py-3 text-sm font-semibold text-blue-700">₹{p.finalPrice.toFixed(2)}</td>
                       <td className="px-4 py-3">{statusBadge(p)}</td>
