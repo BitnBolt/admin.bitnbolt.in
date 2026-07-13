@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { FaHome, FaUsers, FaBuilding, FaShoppingBag, FaChartBar, FaCreditCard, FaCog, FaBars, FaUser, FaShieldAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaUsers, FaBuilding, FaShoppingBag, FaChartBar, FaCreditCard, FaCog, FaBars, FaUser, FaShieldAlt, FaSignOutAlt, FaBoxOpen } from "react-icons/fa";
 
 const sidebarLinks = [
   {
@@ -29,6 +29,12 @@ const sidebarLinks = [
     icon: <FaBuilding size={18} />,
     label: "Vendors",
     isActive: (pathname: string) => pathname.startsWith("/vendors"),
+  },
+  {
+    href: "/products",
+    icon: <FaBoxOpen size={18} />,
+    label: "Products",
+    isActive: (pathname: string) => pathname.startsWith("/products"),
   },
   {
     href: "/orders",
