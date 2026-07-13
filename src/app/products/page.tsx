@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import SidebarLayout from '../sidebar-layout';
 
 interface Admin {
@@ -75,7 +76,25 @@ function vendorLabel(vendor?: ProductVendor | string) {
 }
 
 export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <SidebarLayout>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+          </div>
+        </SidebarLayout>
+      }
+    >
+      <ProductsPageInner />
+    </Suspense>
+  );
+}
+
+function ProductsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const vendorIdFilter = searchParams.get('vendorId') || '';
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<ProductStats>({ total: 0, published: 0, draft: 0, suspended: 0 });
@@ -137,6 +156,7 @@ export default function ProductsPage() {
       });
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (searchTerm) params.append('search', searchTerm);
+      if (vendorIdFilter) params.append('vendorId', vendorIdFilter);
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/products/list?${params}`,
@@ -158,7 +178,7 @@ export default function ProductsPage() {
     } finally {
       setIsLoadingProducts(false);
     }
-  }, [pagination.page, pagination.limit, statusFilter, searchTerm]);
+  }, [pagination.page, pagination.limit, statusFilter, searchTerm, vendorIdFilter]);
 
   useEffect(() => {
     checkAuth();
@@ -169,6 +189,10 @@ export default function ProductsPage() {
       fetchProducts();
     }
   }, [admin, canManage, fetchProducts]);
+
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [vendorIdFilter]);
 
   const openPricing = (product: Product) => {
     setSelected(product);
@@ -313,6 +337,17 @@ export default function ProductsPage() {
           <p className="text-sm text-gray-500 mt-1">
             Set margin and offers on top of vendor base price. Final must stay above base.
           </p>
+          {vendorIdFilter && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-1.5 text-sm text-blue-800">
+              <span>Filtered by vendor</span>
+              <Link href="/products" className="font-medium underline hover:no-underline">
+                Clear filter
+              </Link>
+              <Link href="/vendors" className="font-medium underline hover:no-underline">
+                Back to vendors
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

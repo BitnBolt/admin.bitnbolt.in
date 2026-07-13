@@ -1,7 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import SidebarLayout from '../sidebar-layout';
 
 type AdminSession = {
@@ -58,7 +59,23 @@ const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'processing', 'shipped', 
 const PAYMENT_FILTERS = ['all', 'paid', 'pending', 'failed', 'refunded'];
 
 export default function OrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600" />
+        </div>
+      }
+    >
+      <OrdersPageInner />
+    </Suspense>
+  );
+}
+
+function OrdersPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const vendorIdFilter = searchParams.get('vendorId') || '';
   const [admin, setAdmin] = useState<AdminSession | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -124,6 +141,7 @@ export default function OrdersPage() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (paymentFilter !== 'all') params.append('paymentStatus', paymentFilter);
       if (search) params.append('query', search);
+      if (vendorIdFilter) params.append('vendorId', vendorIdFilter);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/orders/list?${params.toString()}`, {
         headers: {
@@ -148,7 +166,7 @@ export default function OrdersPage() {
       fetchOrders(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admin, statusFilter, paymentFilter]);
+  }, [admin, statusFilter, paymentFilter, vendorIdFilter]);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -174,6 +192,17 @@ export default function OrdersPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
             <p className="text-sm text-gray-500">Monitor orders across vendors and fulfillments.</p>
+            {vendorIdFilter && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-1.5 text-sm text-blue-800">
+                <span>Filtered by vendor</span>
+                <Link href="/orders" className="font-medium underline hover:no-underline">
+                  Clear filter
+                </Link>
+                <Link href="/vendors" className="font-medium underline hover:no-underline">
+                  Back to vendors
+                </Link>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <select
