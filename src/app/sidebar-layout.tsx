@@ -282,10 +282,15 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:relative md:w-64 md:block`}
       >
         <div className="flex items-center gap-2 mb-8 px-2">
-          <span className="bg-red-500 rounded-md w-6 h-6 flex items-center justify-center">
-            <span className="text-white font-bold">AB</span>
-          </span>
-          <span className="text-xl font-bold tracking-wide">Admin Panel</span>
+          <Image
+            src="/icon.png"
+            alt="BitnBolt"
+            width={28}
+            height={28}
+            className="rounded-md object-cover"
+            priority
+          />
+          <span className="text-xl font-bold tracking-wide">BitnBolt Admin</span>
         </div>
         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
           {navItems.map((item) => {
