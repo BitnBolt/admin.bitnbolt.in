@@ -230,6 +230,7 @@ export default function AddAdminPage() {
                     'manage_vendors', 
                     'manage_orders',
                     'manage_products',
+                    'manage_careers',
                     'view_analytics',
                     'manage_payments',
                     'manage_settings',
