@@ -20,6 +20,7 @@ import {
   FaChevronDown,
   FaFileAlt,
   FaClipboardList,
+  FaGraduationCap,
 } from "react-icons/fa";
 
 type NavLink = {
@@ -98,8 +99,16 @@ const navItems: NavItem[] = [
       {
         href: "/career/applications",
         icon: <FaClipboardList size={14} />,
-        label: "Applications",
-        isActive: (pathname) => pathname.startsWith("/career/applications"),
+        label: "Internship Applications",
+        isActive: (pathname) =>
+          pathname.startsWith("/career/applications") &&
+          !pathname.startsWith("/career/cap-applications"),
+      },
+      {
+        href: "/career/cap-applications",
+        icon: <FaGraduationCap size={14} />,
+        label: "CAP Applications",
+        isActive: (pathname) => pathname.startsWith("/career/cap-applications"),
       },
     ],
   },

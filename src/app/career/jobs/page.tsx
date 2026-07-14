@@ -41,7 +41,6 @@ interface Stats {
 const JOB_TYPES = [
   { value: 'internship', label: 'Internship' },
   { value: 'trainee', label: 'Graduate trainee' },
-  { value: 'cap', label: 'CAP' },
   { value: 'full_time', label: 'Full-time' },
   { value: 'part_time', label: 'Part-time' },
   { value: 'contract', label: 'Contract' },
@@ -283,15 +282,12 @@ export default function CareerJobsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Job postings</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Publish roles for{' '}
-              <a
-                href="https://career.bitnbolt.in"
-                target="_blank"
-                rel="noreferrer"
-                className="text-red-600 hover:underline"
-              >
-                career.bitnbolt.in
-              </a>
+              Internship / trainee roles for career.bitnbolt.in. CAP content is fixed on the CAP
+              page — review CAP applicants under{' '}
+              <Link href="/career/cap-applications" className="text-red-600 hover:underline">
+                CAP Applications
+              </Link>
+              .
             </p>
           </div>
           <button

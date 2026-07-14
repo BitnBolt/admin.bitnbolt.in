@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import SidebarLayout from '../../sidebar-layout';
 import { CareerApplicationsPanel } from '@/components/career/CareerApplicationsPanel';
 
-export default function InternshipApplicationsPage() {
+export default function CapApplicationsPage() {
   return (
     <SidebarLayout>
       <Suspense
@@ -14,7 +14,7 @@ export default function InternshipApplicationsPage() {
           </div>
         }
       >
-        <CareerApplicationsPanel scope="internship" />
+        <CareerApplicationsPanel scope="cap" />
       </Suspense>
     </SidebarLayout>
   );
