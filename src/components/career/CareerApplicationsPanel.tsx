@@ -90,6 +90,8 @@ export function CareerApplicationsPanel({ scope }: { scope: ApplicationScope }) 
   const [notesEdit, setNotesEdit] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [capOpen, setCapOpen] = useState(false);
+  const [capToggleSaving, setCapToggleSaving] = useState(false);
 
   const canManage = useMemo(() => {
     if (!admin) return false;
@@ -119,6 +121,49 @@ export function CareerApplicationsPanel({ scope }: { scope: ApplicationScope }) 
       setLoading(false);
     }
   }, [router]);
+
+  const fetchCapSettings = useCallback(async () => {
+    if (!isCap) return;
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/career/cap`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCapOpen(Boolean(data.data.isOpen));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [isCap]);
+
+  const toggleCapApplications = async () => {
+    setCapToggleSaving(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const next = !capOpen;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/career/cap`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isOpen: next }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Failed to update CAP status');
+        return;
+      }
+      setCapOpen(Boolean(data.data.isOpen));
+    } catch {
+      setError('Failed to update CAP status');
+    } finally {
+      setCapToggleSaving(false);
+    }
+  };
 
   const fetchApps = useCallback(async () => {
     setLoadingList(true);
@@ -157,8 +202,11 @@ export function CareerApplicationsPanel({ scope }: { scope: ApplicationScope }) 
   }, [checkAuth]);
 
   useEffect(() => {
-    if (admin && canManage) fetchApps();
-  }, [admin, canManage, fetchApps]);
+    if (admin && canManage) {
+      fetchApps();
+      fetchCapSettings();
+    }
+  }, [admin, canManage, fetchApps, fetchCapSettings]);
 
   const openDetail = (app: Application) => {
     setSelected(app);
@@ -231,11 +279,43 @@ export function CareerApplicationsPanel({ scope }: { scope: ApplicationScope }) 
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {isCap
-            ? 'Review Career Accelerator Program applicants. CAP page content is fixed on career.bitnbolt.in.'
+            ? 'CAP page content is hardcoded on career.bitnbolt.in. Use the toggle to open or close applications only.'
             : 'Review internship / trainee applicants from the career portal.'}
           {jobIdParam && !isCap ? ' (filtered by job)' : ''}
         </p>
       </div>
+
+      {isCap && (
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Accepting CAP applications</p>
+            <p className="text-xs text-gray-500 mt-1">
+              When on, the apply form shows on the CAP page. When off, visitors see “not open right
+              now”.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={capOpen}
+            disabled={capToggleSaving}
+            onClick={toggleCapApplications}
+            className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:opacity-50 ${
+              capOpen ? 'bg-green-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                capOpen ? 'translate-x-7' : 'translate-x-1'
+              }`}
+            />
+            <span className="sr-only">{capOpen ? 'Close CAP applications' : 'Open CAP applications'}</span>
+          </button>
+          <p className={`text-sm font-medium sm:ml-0 ${capOpen ? 'text-green-700' : 'text-gray-500'}`}>
+            {capToggleSaving ? 'Saving…' : capOpen ? 'Open' : 'Closed'}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
