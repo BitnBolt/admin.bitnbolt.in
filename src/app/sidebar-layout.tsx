@@ -21,6 +21,9 @@ import {
   FaFileAlt,
   FaClipboardList,
   FaGraduationCap,
+  FaBell,
+  FaSatelliteDish,
+  FaRobot,
 } from "react-icons/fa";
 
 type NavLink = {
@@ -109,6 +112,27 @@ const navItems: NavItem[] = [
         icon: <FaGraduationCap size={14} />,
         label: "CAP Applications",
         isActive: (pathname) => pathname.startsWith("/career/cap-applications"),
+      },
+    ],
+  },
+  {
+    kind: "group",
+    id: "notifications",
+    icon: <FaBell size={18} />,
+    label: "Notifications",
+    isActive: (pathname) => pathname.startsWith("/notifications"),
+    children: [
+      {
+        href: "/notifications/monitor",
+        icon: <FaSatelliteDish size={14} />,
+        label: "Live monitor",
+        isActive: (pathname) => pathname.startsWith("/notifications/monitor"),
+      },
+      {
+        href: "/notifications/bots",
+        icon: <FaRobot size={14} />,
+        label: "Telegram bots",
+        isActive: (pathname) => pathname.startsWith("/notifications/bots"),
       },
     ],
   },

@@ -231,6 +231,7 @@ export default function AddAdminPage() {
                     'manage_orders',
                     'manage_products',
                     'manage_careers',
+                    'manage_notifications',
                     'view_analytics',
                     'manage_payments',
                     'manage_settings',
@@ -244,7 +245,7 @@ export default function AddAdminPage() {
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700 capitalize">
-                        {permission.replace('_', ' ')}
+                        {permission.replace(/_/g, ' ')}
                       </span>
                     </label>
                   ))}
